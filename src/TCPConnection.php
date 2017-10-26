@@ -12,7 +12,7 @@ namespace unrealization\PHPClassCollection;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 1.4.0
+ * @version 1.4.1
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -137,10 +137,25 @@ class TCPConnection
 		}
 
 		$response = '';
+		$continue = true;
 
-		while ($data = $this->readLine())
+		while ($continue == true)
 		{
-			$response .= $data;
+			$data = null;
+
+			try
+			{
+				$data = $this->readLine();
+			}
+			catch (\Exception $e)
+			{
+				$continue = false;
+			}
+
+			if (!is_null($data))
+			{
+				$response .= $data;
+			}
 		}
 
 		return $response;
@@ -158,7 +173,14 @@ class TCPConnection
 			throw new \Exception('Not connected');
 		}
 
-		return fgets($this->connection);
+		$response = fgets($this->connection);
+
+		if ($response === false)
+		{
+			throw new \Exception('Nothing to read');
+		}
+
+		return $response;
 	}
 
 	/**
