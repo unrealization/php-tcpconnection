@@ -12,7 +12,7 @@ namespace unrealization\PHPClassCollection;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 1.4.1
+ * @version 1.4.2
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -204,7 +204,7 @@ class TCPConnection
 	 * @param string $data
 	 * @throws \Exception
 	 */
-	public function write($data)
+	public function write(string $data)
 	{
 		if ($this->connected() === false)
 		{
@@ -219,7 +219,7 @@ class TCPConnection
 	 * @param string $data
 	 * @throws \Exception
 	 */
-	public function writeLine($data)
+	public function writeLine(string $data)
 	{
 		try
 		{
