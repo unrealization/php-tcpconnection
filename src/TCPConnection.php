@@ -12,7 +12,7 @@ namespace unrealization\PHPClassCollection;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 1.4.2
+ * @version 1.4.2.1
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -94,7 +94,7 @@ class TCPConnection
 	/**
 	 * Set the timeout.
 	 * @param int $sec
-	 * @param int $msec
+	 * @param int $mSec
 	 * @return bool
 	 * @throws \Exception
 	 */
