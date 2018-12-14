@@ -12,7 +12,7 @@ namespace unrealization\PHPClassCollection;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 1.4.2.1
+ * @version 2.0.0
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -72,8 +72,9 @@ class TCPConnection
 
 	/**
 	 * Disconnect from the server.
+	 * @return void
 	 */
-	public function disconnect()
+	public function disconnect(): void
 	{
 		if ($this->connected() === true)
 		{
@@ -196,15 +197,23 @@ class TCPConnection
 			throw new \Exception('Not connected');
 		}
 
-		return fread($this->connection, $bytes);
+		$response = fread($this->connection, $bytes);
+
+		if ($response === false)
+		{
+			throw new \Exception('Nothing to read');
+		}
+
+		return $response;
 	}
 
 	/**
 	 * Write data to the stream.
 	 * @param string $data
+	 * @return void
 	 * @throws \Exception
 	 */
-	public function write(string $data)
+	public function write(string $data): void
 	{
 		if ($this->connected() === false)
 		{
@@ -217,9 +226,10 @@ class TCPConnection
 	/**
 	 * Write a line of data to the stream.
 	 * @param string $data
+	 * @return void
 	 * @throws \Exception
 	 */
-	public function writeLine(string $data)
+	public function writeLine(string $data): void
 	{
 		try
 		{
