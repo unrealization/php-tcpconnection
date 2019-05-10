@@ -12,7 +12,7 @@ namespace unrealization\PHPClassCollection;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 2.0.0
+ * @version 2.99.0
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -37,6 +37,16 @@ class TCPConnection
 	 * @var bool
 	 */
 	protected $ssl;
+	/**
+	 * The amount of time (in seconds) the class will wait for a connection to be established.
+	 * @var float
+	 */
+	protected $connectionTimeout = 10;
+	/**
+	 * The amount of time (in seconds) the class will wait for a response to a request.
+	 * @var float
+	 */
+	protected $streamTimeout = 10;
 
 	/**
 	 * Constructor
@@ -54,20 +64,32 @@ class TCPConnection
 
 	/**
 	 * Connect to the server.
-	 * @return bool
 	 */
-	public function connect(): bool
+	public function connect(): void
 	{
+		$errNo = 0;
+		$errMsg = '';
+
 		if ($this->ssl === true)
 		{
-			$this->connection = fsockopen('ssl://'.$this->host, $this->port);
+			$this->connection = fsockopen('ssl://'.$this->host, $this->port, $errNo, $errMsg, $this->connectionTimeOut);
 		}
 		else
 		{
-			$this->connection = fsockopen($this->host, $this->port);
+			$this->connection = fsockopen($this->host, $this->port, $errNo, $errMsg, $this->connectionTimeout);
 		}
 
-		return $this->connected();
+		if ($this->connected() === false)
+		{
+			//TODO: Exception
+		}
+
+		$set = $this->applyStreamTimeout();
+
+		if ($set === false)
+		{
+			//TODO: Exception
+		}
 	}
 
 	/**
@@ -93,20 +115,38 @@ class TCPConnection
 	}
 
 	/**
-	 * Set the timeout.
-	 * @param int $sec
-	 * @param int $mSec
-	 * @return bool
-	 * @throws \Exception
+	 * Set the connection timeout to control how long the class will wait when trying to establish a new connection.
+	 * @param float $timeout
 	 */
-	public function setTimeout(int $sec, int $mSec = 0): bool
+	public function setConnectionTimeout(float $timeout): void
 	{
-		if ($this->connected() === false)
-		{
-			throw new \Exception('Not connected');
-		}
+		$this->connectionTimeout = $timeout;
+	}
 
-		return stream_set_timeout($this->connection, $sec, $mSec);
+	/**
+	 * Set the stream timeout to control how long the class will wait for a response to a request.
+	 * @param float $timeout
+	 */
+	public function setStreamTimeout(float $timeout): void
+	{
+		$this->streamTimeout = $timeout;
+
+		if ($this->connected() === true)
+		{
+			$set = $this->applyStreamTimeout();
+
+			if ($set === false)
+			{
+				//TODO: Exception
+			}
+		}
+	}
+
+	private function applyStreamTimeout(): bool
+	{
+		$timeoutSeconds = $this->streamTimeout - floor($this->streamTimeout);
+		$timeoutMilliSeconds = ($this->streamTimeout - $timeoutSeconds) * 1000;
+		return stream_set_timeout($this->connection, $timeoutSeconds, $timeoutMilliSeconds);
 	}
 
 	/**
