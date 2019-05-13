@@ -12,7 +12,7 @@ namespace unrealization\PHPClassCollection;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 2.99.0
+ * @version 3.0.0
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -21,7 +21,7 @@ class TCPConnection
 	 * The connection-resource.
 	 * @var resource
 	 */
-	private $connection;
+	private $connection = false;
 	/**
 	 * The address of the server.
 	 * @var string
@@ -46,7 +46,44 @@ class TCPConnection
 	 * The amount of time (in seconds) the class will wait for a response to a request.
 	 * @var float
 	 */
-	protected $streamTimeout = 10;
+	protected $streamTimeout = 5;
+	/**
+	 * Decides whether or not the class should wait for the stream to respond when reading from it.
+	 * @var bool
+	 */
+	protected $streamBlocking = true;
+
+	/**
+	 * Apply the set stream timeout.
+	 * @return bool
+	 * @throws \Exception
+	 */
+	private function applyStreamTimeout(): bool
+	{
+		if ($this->connected() === false)
+		{
+			throw new \Exception('Not connected');
+		}
+
+		$timeoutSeconds = $this->streamTimeout - floor($this->streamTimeout);
+		$timeoutMilliSeconds = ($this->streamTimeout - $timeoutSeconds) * 1000;
+		return stream_set_timeout($this->connection, (int)$timeoutSeconds, (int)$timeoutMilliSeconds);
+	}
+
+	/**
+	 * Apply the set blocking mode.
+	 * @return bool
+	 * @throws \Exception
+	 */
+	private function applyStreamBlocking(): bool
+	{
+		if ($this->connected() === false)
+		{
+			throw new \Exception('Not connected');
+		}
+
+		return stream_set_blocking($this->connection, $this->streamBlocking);
+	}
 
 	/**
 	 * Constructor
@@ -56,7 +93,6 @@ class TCPConnection
 	 */
 	public function __construct(string $host, int $port, bool $ssl = false)
 	{
-		$this->connection = false;
 		$this->host = $host;
 		$this->port = $port;
 		$this->ssl = $ssl;
@@ -64,6 +100,7 @@ class TCPConnection
 
 	/**
 	 * Connect to the server.
+	 * @throws \Exception
 	 */
 	public function connect(): void
 	{
@@ -81,14 +118,28 @@ class TCPConnection
 
 		if ($this->connected() === false)
 		{
-			//TODO: Exception
+			throw new \Exception('Cannot establish connection.');
 		}
 
-		$set = $this->applyStreamTimeout();
-
-		if ($set === false)
+		try
 		{
-			//TODO: Exception
+			$set = $this->applyStreamTimeout();
+
+			if ($set === false)
+			{
+				throw new \Exception('Failed to set stream timeout.');
+			}
+
+			$set = $this->applyStreamBlocking();
+
+			if ($set === false)
+			{
+				throw new \Exception('Failed to set stream blocking mode.');
+			}
+		}
+		catch (\Exception $e)
+		{
+			throw new \Exception('Failed to set up connection.', 0, $e);
 		}
 	}
 
@@ -133,36 +184,47 @@ class TCPConnection
 
 		if ($this->connected() === true)
 		{
-			$set = $this->applyStreamTimeout();
+			try
+			{
+				$set = $this->applyStreamTimeout();
+			}
+			catch (\Exception $e)
+			{
+				throw new \Exception('Failed to set stream timeout.', 0, $e);
+			}
 
 			if ($set === false)
 			{
-				//TODO: Exception
+				throw new \Exception('Failed to set stream timeout.');
 			}
 		}
 	}
 
-	private function applyStreamTimeout(): bool
-	{
-		$timeoutSeconds = $this->streamTimeout - floor($this->streamTimeout);
-		$timeoutMilliSeconds = ($this->streamTimeout - $timeoutSeconds) * 1000;
-		return stream_set_timeout($this->connection, $timeoutSeconds, $timeoutMilliSeconds);
-	}
-
 	/**
-	 * Set the mode of stream-blocking.
-	 * @param int $mode
-	 * @return bool
+	 * Set the stream's blocking mode to control wether or not the class will wait for a response to a request.
+	 * @param bool $mode
 	 * @throws \Exception
 	 */
-	public function setBlocking(int $mode): bool
+	public function setStreamBlocking(bool $mode): void
 	{
-		if ($this->connected() === false)
-		{
-			throw new \Exception('Not connected');
-		}
+		$this->streamBlocking = $mode;
 
-		return stream_set_blocking($this->connection, $mode);
+		if ($this->connected() === true)
+		{
+			try
+			{
+				$set = $this->applyStreamBlocking();
+			}
+			catch (\Exception $e)
+			{
+				throw new \Exception('Failed to set stream blocking mode.', 0, $e);
+			}
+
+			if ($set === false)
+			{
+				throw new \Exception('Failed to set stream blocking mode.');
+			}
+		}
 	}
 
 	/**
