@@ -12,7 +12,7 @@ namespace unrealization\PHPClassCollection;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 3.0.1
+ * @version 3.0.2
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -65,7 +65,7 @@ class TCPConnection
 			throw new \Exception('Not connected');
 		}
 
-		$timeoutSeconds = $this->streamTimeout - floor($this->streamTimeout);
+		$timeoutSeconds = floor($this->streamTimeout);
 		$timeoutMilliSeconds = ($this->streamTimeout - $timeoutSeconds) * 1000;
 		return stream_set_timeout($this->connection, (int)$timeoutSeconds, (int)$timeoutMilliSeconds);
 	}
