@@ -12,7 +12,7 @@ namespace unrealization\PHPClassCollection;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 3.0.2
+ * @version 3.0.3
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -121,25 +121,18 @@ class TCPConnection
 			throw new \Exception('Cannot establish connection.');
 		}
 
-		try
+		$set = $this->applyStreamTimeout();
+
+		if ($set === false)
 		{
-			$set = $this->applyStreamTimeout();
-
-			if ($set === false)
-			{
-				throw new \Exception('Failed to set stream timeout.');
-			}
-
-			$set = $this->applyStreamBlocking();
-
-			if ($set === false)
-			{
-				throw new \Exception('Failed to set stream blocking mode.');
-			}
+			throw new \Exception('Failed to set stream timeout.');
 		}
-		catch (\Exception $e)
+
+		$set = $this->applyStreamBlocking();
+
+		if ($set === false)
 		{
-			throw new \Exception('Failed to set up connection.', 0, $e);
+			throw new \Exception('Failed to set stream blocking mode.');
 		}
 	}
 
@@ -184,14 +177,7 @@ class TCPConnection
 
 		if ($this->connected() === true)
 		{
-			try
-			{
-				$set = $this->applyStreamTimeout();
-			}
-			catch (\Exception $e)
-			{
-				throw new \Exception('Failed to set stream timeout.', 0, $e);
-			}
+			$set = $this->applyStreamTimeout();
 
 			if ($set === false)
 			{
@@ -211,14 +197,7 @@ class TCPConnection
 
 		if ($this->connected() === true)
 		{
-			try
-			{
-				$set = $this->applyStreamBlocking();
-			}
-			catch (\Exception $e)
-			{
-				throw new \Exception('Failed to set stream blocking mode.', 0, $e);
-			}
+			$set = $this->applyStreamBlocking();
 
 			if ($set === false)
 			{
@@ -333,14 +312,6 @@ class TCPConnection
 	 */
 	public function writeLine(string $data): void
 	{
-		try
-		{
-			$this->write($data."\r\n");
-		}
-		catch (\Exception $e)
-		{
-			throw $e;
-		}
+		$this->write($data."\r\n");
 	}
 }
-?>
