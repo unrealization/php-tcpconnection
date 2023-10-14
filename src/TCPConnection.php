@@ -6,13 +6,13 @@ declare(strict_types=1);
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
  */
-namespace unrealization\PHPClassCollection;
+namespace unrealization;
 /**
  * @package PHPClassCollection
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 3.0.3
+ * @version 4.0.0
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -26,32 +26,32 @@ class TCPConnection
 	 * The address of the server.
 	 * @var string
 	 */
-	protected $host;
+	protected string $host;
 	/**
 	 * The port of the server.
 	 * @var int
 	 */
-	protected $port;
+	protected int $port;
 	/**
 	 * Determins whether to use SSL or not.
 	 * @var bool
 	 */
-	protected $ssl;
+	protected bool $ssl;
 	/**
 	 * The amount of time (in seconds) the class will wait for a connection to be established.
 	 * @var float
 	 */
-	protected $connectionTimeout = 10;
+	protected float $connectionTimeout = 10;
 	/**
 	 * The amount of time (in seconds) the class will wait for a response to a request.
 	 * @var float
 	 */
-	protected $streamTimeout = 5;
+	protected float $streamTimeout = 5;
 	/**
 	 * Decides whether or not the class should wait for the stream to respond when reading from it.
 	 * @var bool
 	 */
-	protected $streamBlocking = true;
+	protected bool $streamBlocking = true;
 
 	/**
 	 * Apply the set stream timeout.
