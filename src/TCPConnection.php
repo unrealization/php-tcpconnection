@@ -206,6 +206,29 @@ class TCPConnection
 		}
 	}
 
+	public function enableEncryption(bool $enabled, ?int $crypto_method = null, bool $disablePeerVerification = false): bool
+	{
+		if ($this->connected() === false)
+		{
+			throw new \Exception('Not connected');
+		}
+
+		if ($disablePeerVerification === true)
+		{
+			stream_context_set_option($this->connection, 'ssl', 'verify_peer', false);
+			stream_context_set_option($this->connection, 'ssl', 'verify_peer_name', false);
+		}
+
+		$result = stream_socket_enable_crypto($this->connection, $enabled, $crypto_method);
+
+		if ($result === 0)
+		{
+			return false;
+		}
+
+		return $result;
+	}
+
 	/**
 	 * Read all data from the stream.
 	 * @return string
