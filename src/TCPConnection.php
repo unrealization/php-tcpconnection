@@ -12,7 +12,7 @@ namespace unrealization;
  * @subpackage TCPConnection
  * @link http://php-classes.sourceforge.net/ PHP Class Collection
  * @author Dennis Wronka <reptiler@users.sourceforge.net>
- * @version 5.0.1
+ * @version 5.99.1
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPL 2.1
  */
 class TCPConnection
@@ -38,6 +38,16 @@ class TCPConnection
 	 */
 	protected bool $ssl;
 	/**
+	 * Determins wether to verify peer SSL/TLS certificates or not.
+	 * @var boolean
+	 */
+	protected bool $peerVerification = true;
+	/**
+	 * Determins wether self-signed certificates will be accepted or not.
+	 * @var boolean
+	 */
+	protected bool $allowSelfSigned = false;
+	/**
 	 * The amount of time (in seconds) the class will wait for a connection to be established.
 	 * @var float
 	 */
@@ -52,6 +62,40 @@ class TCPConnection
 	 * @var bool
 	 */
 	protected bool $streamBlocking = true;
+
+	/**
+	 * Apply the set peer verification policy.
+	 * @return bool
+	 */
+	private function applyPeerVerification(): bool
+	{
+		if ($this->connected() === false)
+		{
+			throw new \Exception('Not connected');
+		}
+
+		if (!stream_context_set_option($this->connection, 'ssl', 'verify_peer', $this->peerVerification))
+		{
+			return false;
+		}
+
+		return stream_context_set_option($this->connection, 'ssl', 'verify_peer_name', $this->peerVerification);
+	}
+
+	/**
+	 * Apply the set certificate signature check policy.
+	 * @return bool
+	 * @throws \Exception
+	 */
+	private function applySignatureCheck(): bool
+	{
+		if (this->connected() === false)
+		{
+			throw new \Exception('Not connected');
+		}
+
+		return stream_context_set_option($this->connection, 'ssl', 'allow_self_signed', $this->allowSelfSigned);
+	}
 
 	/**
 	 * Apply the set stream timeout.
@@ -104,21 +148,29 @@ class TCPConnection
 	 */
 	public function connect(): void
 	{
+		$contextOptions = array(
+			'ssl'	=> array(
+				'verify_peer'		=> $this->peerVerification,
+				'verify_peer_name'	=> $this->peerVerification,
+				'allow_self_signed'	=> $this->allowSelfSigned
+			)
+		);
 		$errNo = 0;
 		$errMsg = '';
+		$context = stream_context_create($contextOptions);
 
 		if ($this->ssl === true)
 		{
-			$this->connection = fsockopen('ssl://'.$this->host, $this->port, $errNo, $errMsg, $this->connectionTimeout);
+			$this->connection = stream_socket_client('ssl://'.$this->host.':'.$this->port, $errNo, $errMsg, $this->connectionTimeout, STREAM_CLIENT_CONNECT, $context);
 		}
 		else
 		{
-			$this->connection = fsockopen($this->host, $this->port, $errNo, $errMsg, $this->connectionTimeout);
+			$this->connection = stream_socket_client($this->host.':'.$this->port, $errNo, $errMsg, $this->connectionTimeout, STREAM_CLIENT_CONNECT, $context);
 		}
 
 		if ($this->connected() === false)
 		{
-			throw new \Exception('Cannot establish connection.');
+			throw new \Exception('Cannot establish connection. Error: '.$errMsg.' ('.$errNo.')');
 		}
 
 		$set = $this->applyStreamTimeout();
@@ -144,7 +196,12 @@ class TCPConnection
 	{
 		if ($this->connected() === true)
 		{
-			fclose($this->connection);
+			//fclose($this->connection);
+			if (!stream_socket_shutdown($this->connection, STREAM_SHUT_RDWR))
+			{
+				throw new \Exception('Cannot close connection.');
+			}
+
 			$this->connection = false;
 		}
 	}
@@ -156,6 +213,36 @@ class TCPConnection
 	public function connected(): bool
 	{
 		return ($this->connection !== false);
+	}
+
+	public function setPeerVerification(bool $peerVerification): void
+	{
+		$this->peerVerification = $peerVerification;
+
+		if ($this->connected() === true)
+		{
+			$set = $this->applyPeerVerification();
+
+			if ($set === false)
+			{
+				throw new \Exception('Failed to set peer verification.');
+			}
+		}
+	}
+
+	public function setAllowSelfSigned(bool $allowSelfSigned): void
+	{
+		$this->allowSelfSigned = $allowSelfSigned;
+
+		if ($this->connected() === true)
+		{
+			$set = $this->applySignatureCheck();
+
+			if ($set === false)
+			{
+				throw new \Exception('Failed to set certificate signature check.');
+			}
+		}
 	}
 
 	/**
@@ -206,17 +293,11 @@ class TCPConnection
 		}
 	}
 
-	public function enableEncryption(bool $enabled, ?int $crypto_method = null, bool $disablePeerVerification = false): bool
+	public function enableEncryption(bool $enabled, ?int $crypto_method = null): bool
 	{
 		if ($this->connected() === false)
 		{
 			throw new \Exception('Not connected');
-		}
-
-		if ($disablePeerVerification === true)
-		{
-			stream_context_set_option($this->connection, 'ssl', 'verify_peer', false);
-			stream_context_set_option($this->connection, 'ssl', 'verify_peer_name', false);
 		}
 
 		$result = stream_socket_enable_crypto($this->connection, $enabled, $crypto_method);
@@ -301,7 +382,7 @@ class TCPConnection
 			throw new \Exception('Not connected');
 		}
 
-		$response = fread($this->connection, $bytes);
+		$response = stream_socket_recvfrom($this->connection, $bytes);
 
 		if ($response === false)
 		{
@@ -324,7 +405,7 @@ class TCPConnection
 			throw new \Exception('Not connected');
 		}
 
-		fwrite($this->connection, $data);
+		stream_socket_sendto($this->connection, $data);
 	}
 
 	/**
@@ -333,8 +414,8 @@ class TCPConnection
 	 * @return void
 	 * @throws \Exception
 	 */
-	public function writeLine(string $data): void
+	public function writeLine(string $data, string $eol = "\r\n"): void
 	{
-		$this->write($data."\r\n");
+		$this->write($data.$eol);
 	}
 }
